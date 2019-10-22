@@ -256,8 +256,8 @@ DAC_AB_Setup:			DAC_Setup $0D,DAC_AB_Data
 DAC_AC_Setup:			DAC_Setup $06,DAC_AC_Data
 DAC_AD_Setup:			DAC_Setup $10,DAC_AD_AE_Data
 DAC_AE_Setup:			DAC_Setup $18,DAC_AD_AE_Data
-DAC_AF_Setup:			DAC_Setup $09,DAC_AF_B0_Data
-DAC_B0_Setup:			DAC_Setup $12,DAC_AF_B0_Data
+DAC_AF_Setup:			DAC_Setup $09,DAC_AF_Data
+DAC_B0_Setup:			DAC_Setup $12,DAC_AF_Data
 DAC_B1_Setup:			DAC_Setup $18,DAC_B1_Data
 DAC_B2_Setup:			DAC_Setup $16,DAC_B2_B3_Data
 DAC_B3_Setup:			DAC_Setup $20,DAC_B2_B3_Data
@@ -505,9 +505,11 @@ zTempVariablesEnd:
 	endif
 		dephase
 ; ---------------------------------------------------------------------------
-		!org z80_SoundDriverStart
+		!org z80_SoundDriverStart	; Rewind the ROM address to where we were earlier (allocating the RAM above messes with it)
 ; z80_SoundDriver:
 Z80_SoundDriver:
+		org		Z80_SoundDriver+Size_of_Snd_driver_guess	; This 'org' inserts some padding that we can paste the compressed sound driver over later (see the 's3p2bin' tool)
+
 		save
 		!org	0							; z80 Align, handled by the build process
 		CPU Z80
@@ -867,8 +869,8 @@ DAC_Banks:
 		db		zmake68kBank(DAC_A0_Data)            ,zmake68kBank(DAC_A1_Data)            ,zmake68kBank(DAC_A2_Data)            ,zmake68kBank(DAC_A3_Data)
 		db		zmake68kBank(DAC_A4_Data)            ,zmake68kBank(DAC_A5_Data)            ,zmake68kBank(DAC_A6_Data)            ,zmake68kBank(DAC_A7_Data)
 		db		zmake68kBank(DAC_A8_Data)            ,zmake68kBank(DAC_A9_Data)            ,zmake68kBank(DAC_AA_Data)            ,zmake68kBank(DAC_AB_Data)
-		db		zmake68kBank(DAC_AC_Data)            ,zmake68kBank(DAC_AD_AE_Data)         ,zmake68kBank(DAC_AD_AE_Data)         ,zmake68kBank(DAC_AF_B0_Data)
-		db		zmake68kBank(DAC_AF_B0_Data)         ,zmake68kBank(DAC_B1_Data)            ,zmake68kBank(DAC_B2_B3_Data)         ,zmake68kBank(DAC_B2_B3_Data)
+		db		zmake68kBank(DAC_AC_Data)            ,zmake68kBank(DAC_AD_AE_Data)         ,zmake68kBank(DAC_AD_AE_Data)         ,zmake68kBank(DAC_AF_Data)
+		db		zmake68kBank(DAC_AF_Data)            ,zmake68kBank(DAC_B1_Data)            ,zmake68kBank(DAC_B2_B3_Data)         ,zmake68kBank(DAC_B2_B3_Data)
 		db		zmake68kBank(DAC_B4_C1_C2_C3_C4_Data),zmake68kBank(DAC_B5_Data)            ,zmake68kBank(DAC_B6_Data)            ,zmake68kBank(DAC_B7_Data)
 		db		zmake68kBank(DAC_B8_B9_Data)         ,zmake68kBank(DAC_B8_B9_Data)         ,zmake68kBank(DAC_BA_Data)            ,zmake68kBank(DAC_BB_Data)
 		db		zmake68kBank(DAC_BC_Data)            ,zmake68kBank(DAC_BD_Data)            ,zmake68kBank(DAC_BE_Data)            ,zmake68kBank(DAC_BF_Data)
@@ -4545,12 +4547,11 @@ zPlaySEGAPCM:
 
 		restore
 		padding off
-		!org		Z80_SoundDriver+Size_of_Snd_driver_guess
-
-		align0 $10
+		!org		Z80_SoundDriver+Size_of_Snd_driver_guess	; The assembler still thinks we're in Z80 memory, so use an 'org' to switch back to the cartridge
 
 ; Z80_Snd_Driver2:
 Z80_SoundDriverData:
+		org		Z80_SoundDriverData+Size_of_Snd_driver2_guess	; Once again, create some padding that we can paste the compressed data over later
 ; ---------------------------------------------------------------------------
 		save
 		CPU Z80
@@ -4883,9 +4884,7 @@ z80_UniVoiceBank:
 ; ===========================================================================
 		restore
 		padding off
-		!org		Z80_SoundDriverData+Size_of_Snd_driver2_guess
-
-		align0 $10
+		!org		Z80_SoundDriverData+Size_of_Snd_driver2_guess	; The assembler still thinks we're in Z80 memory, so use an 'org' to switch back to the cartridge
 
 ; ---------------------------------------------------------------------------
 ; ===========================================================================
